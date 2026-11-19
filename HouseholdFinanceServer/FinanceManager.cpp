@@ -13,8 +13,8 @@ void FinanceManager::validate(const Transaction& transaction) {
     if (transaction.category.empty()) {
         throw std::invalid_argument("category must not be empty");
     }
-    if (transaction.amount <= 0) {
-        throw std::invalid_argument("amount must be greater than 0");
+    if (transaction.amount <= 0 || transaction.amount > kMaxAmount) {
+        throw std::invalid_argument("amount must be greater than 0 and at most kMaxAmount");
     }
     if (!isValidDate(transaction.date)) {
         throw std::invalid_argument("date must be a valid YYYY-MM-DD date");
@@ -32,6 +32,9 @@ int FinanceManager::addTransaction(const std::string& description, Cents amount,
     transaction.date = date;
 
     validate(transaction);  // throws before anything is changed, so a failed add has no effect
+    if (transactions_.size() >= kMaxTransactions || nextId_ > kMaxTransactionId) {
+        throw std::length_error("too many transactions");
+    }
 
     transaction.id = nextId_++;
     transactions_.push_back(transaction);
@@ -133,21 +136,27 @@ void FinanceManager::setBudget(const std::string& category, Cents amount) {
     if (cleanCategory.empty()) {
         throw std::invalid_argument("category must not be empty");
     }
-    if (amount <= 0) {
-        throw std::invalid_argument("budget must be greater than 0");
+    if (amount <= 0 || amount > kMaxAmount) {
+        throw std::invalid_argument("budget must be greater than 0 and at most kMaxAmount");
     }
     budgets_[cleanCategory] = amount;
 }
 
 SavingsForecast FinanceManager::forecastSavings(Cents goal) const {
     SavingsForecast forecast;
-    std::vector<std::string> allMonths = months();
-    forecast.monthsOfData = static_cast<int>(allMonths.size());
-    if (allMonths.empty() || goal <= 0) return forecast;
+
+    // One pass over the transactions: the net total per month. (Calling summarizeMonth()
+    // for every month would scan all transactions once per month.)
+    std::map<std::string, Cents> netByMonth;
+    for (const Transaction& t : transactions_) {
+        netByMonth[t.month()] += t.isExpense() ? -t.amount : t.amount;
+    }
+    forecast.monthsOfData = static_cast<int>(netByMonth.size());
+    if (netByMonth.empty() || goal <= 0) return forecast;
 
     Cents totalNet = 0;
-    for (const std::string& month : allMonths) {
-        totalNet += summarizeMonth(month).net();
+    for (const auto& [month, net] : netByMonth) {
+        totalNet += net;
     }
     forecast.averageMonthlySavings = totalNet / forecast.monthsOfData;
 

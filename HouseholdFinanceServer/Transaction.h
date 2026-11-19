@@ -9,6 +9,11 @@
 // TransactionType::Expense is clearer than `true` at a call site.
 enum class TransactionType { Income, Expense };
 
+// Limits that keep every calculation inside the range of its integer type
+// (see FileStorage and FinanceManager, which enforce them).
+constexpr int kMaxTransactionId = 1'000'000'000;
+constexpr size_t kMaxTransactions = 1'000'000;
+
 // A single income or expense entry.
 struct Transaction {
     int id = 0;

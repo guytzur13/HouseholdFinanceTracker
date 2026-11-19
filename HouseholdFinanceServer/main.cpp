@@ -14,24 +14,24 @@ const std::string kBudgetsFile = "budgets.csv";
 
 std::map<std::string, Cents> defaultBudgets() {
     return {
-        {"אוכל", 2000 * 100},
-        {"מגורים", 6000 * 100},
-        {"בילויים", 1500 * 100},
-        {"כללי", 1000 * 100},
+        {"אוכל", 2000LL * 100},
+        {"מגורים", 6000LL * 100},
+        {"בילויים", 1500LL * 100},
+        {"כללי", 1000LL * 100},
     };
 }
 
 // Sample data for the very first run, so the reports have something to show.
 void addSampleData(FinanceManager& manager) {
     using T = TransactionType;
-    manager.addTransaction("משכורת א", 10000 * 100, "שכר", T::Income, "2026-10-01");
-    manager.addTransaction("משכורת ב", 9000 * 100, "שכר", T::Income, "2026-10-01");
-    manager.addTransaction("שכירות", 4500 * 100, "מגורים", T::Expense, "2026-10-02");
-    manager.addTransaction("סופרמרקט", 1250 * 100, "אוכל", T::Expense, "2026-10-08");
-    manager.addTransaction("משכורת א", 10000 * 100, "שכר", T::Income, "2026-11-01");
-    manager.addTransaction("משכורת ב", 9000 * 100, "שכר", T::Income, "2026-11-01");
-    manager.addTransaction("שכירות", 4500 * 100, "מגורים", T::Expense, "2026-11-02");
-    manager.addTransaction("סופרמרקט", 2340 * 100 + 50, "אוכל", T::Expense, "2026-11-10");
+    manager.addTransaction("משכורת א", 10000LL * 100, "שכר", T::Income, "2026-10-01");
+    manager.addTransaction("משכורת ב", 9000LL * 100, "שכר", T::Income, "2026-10-01");
+    manager.addTransaction("שכירות", 4500LL * 100, "מגורים", T::Expense, "2026-10-02");
+    manager.addTransaction("סופרמרקט", 1250LL * 100, "אוכל", T::Expense, "2026-10-08");
+    manager.addTransaction("משכורת א", 10000LL * 100, "שכר", T::Income, "2026-11-01");
+    manager.addTransaction("משכורת ב", 9000LL * 100, "שכר", T::Income, "2026-11-01");
+    manager.addTransaction("שכירות", 4500LL * 100, "מגורים", T::Expense, "2026-11-02");
+    manager.addTransaction("סופרמרקט", 2340LL * 100 + 50, "אוכל", T::Expense, "2026-11-10");
 }
 
 } // namespace

@@ -2,13 +2,6 @@
 
 #include <cctype>
 
-namespace {
-
-// Upper limit to prevent overflow: 1 billion shekels is far more than any household needs.
-const Cents kMaxAmount = 1'000'000'000LL * 100;
-
-} // namespace
-
 bool parseMoney(const std::string& text, Cents& out) {
     if (text.empty()) return false;
 

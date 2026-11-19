@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <stdexcept>
 
 #include "FinanceManager.h"
@@ -155,4 +156,21 @@ TEST(FinanceManagerLoading, ContinuesIdsAfterTheHighestLoadedId) {
     Transaction b{8, "b", 100, "food", T::Expense, "2026-11-02"};
     manager.loadTransactions({a, b});
     EXPECT_EQ(manager.addTransaction("c", 100, "food", T::Expense, "2026-11-03"), 9);
+}
+
+TEST_F(FinanceManagerTest, RejectsAmountsAboveTheMaximum) {
+    EXPECT_THROW(manager.addTransaction("x", kMaxAmount + 1, "food", T::Expense, "2026-11-01"),
+                 std::invalid_argument);
+    EXPECT_NO_THROW(manager.addTransaction("x", kMaxAmount, "food", T::Expense, "2026-11-01"));
+    EXPECT_THROW(manager.setBudget("food", kMaxAmount + 1), std::invalid_argument);
+}
+
+TEST_F(FinanceManagerTest, ForecastIgnoresTheOrderOfTransactions) {
+    // Same data added in a different order must give the same forecast.
+    FinanceManager reversed;
+    std::vector<Transaction> all = manager.transactions();
+    std::reverse(all.begin(), all.end());
+    reversed.loadTransactions(all);
+    EXPECT_EQ(reversed.forecastSavings(10000 * 100).averageMonthlySavings,
+              manager.forecastSavings(10000 * 100).averageMonthlySavings);
 }

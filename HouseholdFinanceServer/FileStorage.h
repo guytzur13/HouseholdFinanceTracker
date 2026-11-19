@@ -1,6 +1,7 @@
 #ifndef FILE_STORAGE_H
 #define FILE_STORAGE_H
 
+#include <filesystem>
 #include <map>
 #include <string>
 #include <vector>
@@ -21,9 +22,15 @@ struct LoadResult {
 // Saving is "atomic": data is first written to a temporary file, which then
 // replaces the real file in one step. If the program crashes in the middle
 // of writing, the previous data file is still intact.
+//
+// The files may come from another computer (through a synced folder), so loading
+// treats them as untrusted input: every field is validated and range-checked, and
+// a bad line is skipped instead of being trusted.
 class FileStorage {
 public:
-    FileStorage(std::string transactionsPath, std::string budgetsPath);
+    // std::filesystem::path (not std::string) so that folder names with non-English
+    // characters work on Windows too, where paths are stored as wide strings.
+    FileStorage(std::filesystem::path transactionsPath, std::filesystem::path budgetsPath);
 
     LoadResult loadTransactions(std::vector<Transaction>& out) const;
     bool saveTransactions(const std::vector<Transaction>& transactions) const;
@@ -32,8 +39,8 @@ public:
     bool saveBudgets(const std::map<std::string, Cents>& budgets) const;
 
 private:
-    std::string transactionsPath_;
-    std::string budgetsPath_;
+    std::filesystem::path transactionsPath_;
+    std::filesystem::path budgetsPath_;
 };
 
 #endif // FILE_STORAGE_H
