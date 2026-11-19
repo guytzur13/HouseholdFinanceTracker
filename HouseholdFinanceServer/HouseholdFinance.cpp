@@ -1,10 +1,12 @@
 #include "HouseholdFinance.h"
+#include "InputUtils.h"
 
 #include <algorithm>
 #include <fstream>
 #include <iomanip> // ספרייה לעיצוב והגבלת ספרות אחרי הנקודה
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 // אבטחה: פונקציה שמנקה את הקלט מתווים מסוכנים (מניעת הזרקות קוד לקובץ)
 std::string HouseholdFinance::sanitizeInput(std::string input) {
@@ -76,6 +78,7 @@ void HouseholdFinance::loadFromFile() {
     transactions.clear();
     std::string line;
     int maxId = 0;
+    int skippedLines = 0;
     while (std::getline(file, line)) {
         std::stringstream ss(line);
         std::string idStr, desc, amtStr, cat, isExpStr, date;
@@ -85,15 +88,30 @@ void HouseholdFinance::loadFromFile() {
         std::getline(ss, cat, ',');
         std::getline(ss, isExpStr, ',');
         std::getline(ss, date, ',');
-        if(idStr.empty()) continue;
-        int id = std::stoi(idStr);
-        double amt = std::stod(amtStr);
-        bool isExp = (isExpStr == "1");
-        transactions.push_back({id, desc, amt, cat, isExp, date});
-        if (id > maxId) maxId = id;
+        if (idStr.empty()) continue;
+
+        // שורה פגומה בקובץ (למשל אם מישהו ערך אותו ידנית) לא תפיל את התוכנה,
+        // אלא תדולג עם הודעה למשתמש
+        try {
+            int id = std::stoi(idStr);
+            double amt = std::stod(amtStr);
+            if (amt <= 0 || (isExpStr != "0" && isExpStr != "1")) {
+                throw std::invalid_argument("bad field");
+            }
+            bool isExp = (isExpStr == "1");
+            transactions.push_back({id, desc, amt, cat, isExp, date});
+            if (id > maxId) maxId = id;
+        } catch (const std::exception&) {
+            skippedLines++;
+        }
     }
     nextId = maxId + 1;
     file.close();
+
+    if (skippedLines > 0) {
+        std::cout << "[!] אזהרה: דולגו " << skippedLines
+                  << " שורות פגומות בקובץ הנתונים." << std::endl;
+    }
 }
 
 // הדפסת הדו"ח הפיננסי בעברית
@@ -150,14 +168,7 @@ void HouseholdFinance::calculateSavingsGoal() {
         return;
     }
 
-    double goalAmount;
-    std::cout << "הכנס את סכום היעד שברצונכם לחסוך (למשל: 30000 לחופשה): ";
-    std::cin >> goalAmount;
-
-    if (goalAmount <= 0) {
-        std::cout << "[X] שגיאה: סכום היעד חייב להיות גדול מ-0!" << std::endl;
-        return;
-    }
+    double goalAmount = readPositiveDouble("הכנס את סכום היעד שברצונכם לחסוך (למשל: 30000 לחופשה): ");
 
     // חישוב מספר החודשים (חלוקה פשוטה של סכום היעד בחיסכון החודשי הצפוי)
     double monthsNeeded = goalAmount / monthlySavings;
@@ -169,47 +180,38 @@ void HouseholdFinance::calculateSavingsGoal() {
 }
 
 void HouseholdFinance::runMenu() {
-    int choice = 0;
-    while (choice != 4) {
-        std::cout << "=== תפריט ניהול תקציב מאובטח ===" << std::endl;
-        std::cout << "1. הוספת תנועה חדשה (הוצאה או הכנסה)" << std::endl;
-        std::cout << "2. הצגת הדו\"ח הכספי" << std::endl;
-        std::cout << "3. חישוב צפי הגעה ליעד חיסכון" << std::endl;
-        std::cout << "4. יציאה ושמירה" << std::endl;
-        std::cout << "הקש את הבחירה שלך: ";
-        std::cin >> choice;
+    try {
+        int choice = 0;
+        while (choice != 4) {
+            std::cout << "=== תפריט ניהול תקציב מאובטח ===" << std::endl;
+            std::cout << "1. הוספת תנועה חדשה (הוצאה או הכנסה)" << std::endl;
+            std::cout << "2. הצגת הדו\"ח הכספי" << std::endl;
+            std::cout << "3. חישוב צפי הגעה ליעד חיסכון" << std::endl;
+            std::cout << "4. יציאה ושמירה" << std::endl;
+            choice = readInt("הקש את הבחירה שלך: ", 1, 4);
 
-        if (choice == 1) {
-            std::string desc, cat, date;
-            double amt;
-            int type;
+            if (choice == 1) {
+                std::cout << std::endl;
+                std::string desc = readLine("הכנס תיאור (למשל: סופרמרקט): ");
+                double amt = readPositiveDouble("הכנס סכום: ");
+                std::string cat = readLine("הכנס קטגוריה (אוכל, מגורים, בילויים, כללי): ");
+                int type = readInt("האם זו הוצאה (1) או הכנסה (2)? ", 1, 2);
+                bool isExp = (type == 1);
+                std::string date = readDate("הכנס תאריך (שנה-חודש-יום): ");
 
-            std::cout << "\nהכנס תיאור (למשל: סופרמרקט): ";
-            std::cin.ignore();
-            std::getline(std::cin, desc);
-
-            std::cout << "הכנס סכום: ";
-            std::cin >> amt;
-
-            std::cout << "הכנס קטגוריה (אוכל, מגורים, בילויים, כללי): ";
-            std::cin >> cat;
-
-            std::cout << "האם זו הוצאה (1) או הכנסה (2)? ";
-            std::cin >> type;
-            bool isExp = (type == 1);
-
-            std::cout << "הכנס תאריך (שנה-חודש-יום): ";
-            std::cin >> date;
-
-            addTransaction(desc, amt, cat, isExp, date);
-            std::cout << std::endl;
+                addTransaction(desc, amt, cat, isExp, date);
+                std::cout << std::endl;
+            }
+            else if (choice == 2) {
+                printReport();
+            }
+            else if (choice == 3) {
+                calculateSavingsGoal();
+            }
         }
-        else if (choice == 2) {
-            printReport();
-        }
-        else if (choice == 3) {
-            calculateSavingsGoal();
-        }
+    } catch (const InputClosed&) {
+        // הקלט נסגר (למשל Ctrl+D) - יוצאים בצורה מסודרת במקום להיתקע בלולאה
+        std::cout << std::endl;
     }
     std::cout << "\nלהתראות! כל הנתונים נשמרו בצורה מאובטחת." << std::endl;
 }

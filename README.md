@@ -11,7 +11,8 @@ A C++ command-line application for tracking household income and expenses, with 
 - Per-category monthly budgets with an over-budget warning
 - Financial report: total income, total expenses, net balance, and budget status per category
 - Savings-goal calculator: estimates how many months it takes to reach a target amount
-- Basic input validation and sanitizing of values written to the data file
+- Input validation: re-prompts on invalid numbers, menu choices and dates (`YYYY-MM-DD`, including leap years); malformed lines in the data file are skipped with a warning
+- Sanitizing of values written to the data file
 
 ## Tech
 
@@ -25,6 +26,8 @@ A C++ command-line application for tracking household income and expenses, with 
     ├── Transaction.h          # Transaction struct
     ├── HouseholdFinance.h     # HouseholdFinance class declaration
     ├── HouseholdFinance.cpp   # HouseholdFinance implementation
+    ├── InputUtils.h           # safe input helpers (declarations)
+    ├── InputUtils.cpp         # safe input helpers (implementation)
     └── main.cpp               # entry point
 
 ## Build and run
@@ -41,7 +44,7 @@ On first run, a few sample transactions are created. Data is saved to `finance_d
 ## Roadmap
 
 - [x] Split the code into separate files (`Transaction.h`, `HouseholdFinance.h/.cpp`, `main.cpp`)
-- [ ] Robust input handling (invalid numbers, malformed lines in the data file)
+- [x] Robust input handling (invalid numbers, malformed lines in the data file)
 - [ ] Filter by month so the savings calculation uses monthly figures
 - [ ] Unit tests
 - [ ] Configurable budgets (load from a file instead of hardcoded values)
