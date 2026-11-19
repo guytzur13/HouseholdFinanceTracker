@@ -86,7 +86,7 @@ The logic is covered by unit tests written with [GoogleTest](https://github.com/
 ctest --test-dir build --output-on-failure
 ```
 
-The tests cover money parsing and formatting, date validation (including leap years), monthly summaries, budget overruns, the savings forecast, editing and deleting, and saving and loading files, including corrupted input. GitHub Actions runs the build and all tests on Linux and macOS on every push.
+The tests cover money parsing and formatting, date validation (including leap years), monthly summaries, budget overruns, the savings forecast, editing and deleting, and saving and loading files, including corrupted input. GitHub Actions runs the build and all tests on every push.
 
 ## Roadmap
 
