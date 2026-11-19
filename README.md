@@ -1,54 +1,104 @@
 # HouseholdFinanceTracker
 
-A C++ command-line application for tracking household income and expenses, with per-category budgets and a savings-goal calculator.
+![CI](https://github.com/guytzur13/HouseholdFinanceTracker/actions/workflows/ci.yml/badge.svg)
 
-> **Status:** in progress. The core features work; see the Roadmap below for what is planned.
+A C++17 command-line application for managing a household's monthly budget: recording income and expenses, tracking spending against per-category budgets, and forecasting how long it will take to reach a savings goal.
+
+I built it for my brother and his partner to manage their household finances, and used it to practise writing C++ the way it is written in real projects: separated layers, input validation, unit tests and continuous integration.
 
 ## Features
 
-- Add income and expense transactions (description, amount, category, date)
-- Persistent storage in a local text file (`finance_data.txt`)
-- Per-category monthly budgets with an over-budget warning
-- Financial report: total income, total expenses, net balance, and budget status per category
-- Savings-goal calculator: estimates how many months it takes to reach a target amount
-- Input validation: re-prompts on invalid numbers, menu choices and dates (`YYYY-MM-DD`, including leap years); malformed lines in the data file are skipped with a warning
-- Sanitizing of values written to the data file
+- **Income and expenses**: add, edit and delete transactions (description, amount, category, date)
+- **Monthly report**: income, expenses and net balance for any month, with spending per category
+- **Category budgets**: set a monthly budget per category; get a warning as soon as an expense goes over it
+- **Savings forecast**: estimates how many months it will take to reach a goal, based on the average monthly savings
+- **Persistent storage**: data is saved to CSV files after every change, with atomic writes so a crash cannot corrupt the data
+- **Robust input handling**: invalid numbers, menu choices and dates are rejected with a clear message; malformed lines in the data files are skipped with a warning instead of crashing the program
 
-## Tech
+## Example
 
-- C++ (STL: `vector`, `map`, `fstream`, `sstream`)
-- Object-oriented design (`Transaction` struct, `HouseholdFinance` class), split into header and source files
-- Xcode project included; also builds from the command line
+```
+=========================================
+דו"ח חודשי: 2026-11
+=========================================
+הכנסות:  19,000.00 ש"ח
+הוצאות:  6,840.50 ש"ח
+נטו:     12,159.50 ש"ח
+-----------------------------------------
+מצב תקציבים:
+* אוכל: 2,340.50 / 2,000.00 ש"ח  <-- חריגה של 340.50 ש"ח
+* בילויים: 0.00 / 1,500.00 ש"ח
+* כללי: 0.00 / 1,000.00 ש"ח
+* מגורים: 4,500.00 / 6,000.00 ש"ח
+=========================================
+```
 
-## Project structure
+(The user interface is in Hebrew, since the app was built for a Hebrew-speaking household.)
 
-    HouseholdFinanceServer/
-    ├── Transaction.h          # Transaction struct
-    ├── HouseholdFinance.h     # HouseholdFinance class declaration
-    ├── HouseholdFinance.cpp   # HouseholdFinance implementation
-    ├── InputUtils.h           # safe input helpers (declarations)
-    ├── InputUtils.cpp         # safe input helpers (implementation)
-    └── main.cpp               # entry point
+## Architecture
+
+The code is split into layers, each with one responsibility:
+
+```
+main.cpp ──> ConsoleApp ──> FinanceManager ──> Transaction, Money, Validation
+                  │
+                  └──────> FileStorage
+```
+
+| File | Responsibility |
+|---|---|
+| `Transaction.h` | The `Transaction` struct and the `TransactionType` enum |
+| `Money.h/.cpp` | Parsing and formatting amounts; money is stored as integer agorot |
+| `Validation.h/.cpp` | Pure validation helpers: dates (including leap years), text sanitizing |
+| `FinanceManager.h/.cpp` | Business logic: transactions, monthly summaries, budgets, savings forecast. **No input/output at all** |
+| `FileStorage.h/.cpp` | Loading and saving CSV files |
+| `InputUtils.h/.cpp` | Reading validated input from the console |
+| `ConsoleApp.h/.cpp` | The menu and all printing |
+| `main.cpp` | Wires everything together |
+
+### Design decisions
+
+- **Money as integers, not `double`.** Amounts are stored in agorot as `long long`. Floating-point numbers cannot represent most decimal fractions exactly (`0.1 + 0.2 != 0.3`), which leads to rounding errors in financial sums. Integers are exact.
+- **Business logic separated from I/O.** `FinanceManager` never touches `cin`, `cout` or files. That is what makes it unit-testable, and it means the same logic could later be used behind a GUI or a web API without changes.
+- **Validation in one place.** `FinanceManager` validates every transaction and throws `std::invalid_argument` on bad data, so invalid data cannot get in regardless of where it comes from.
+- **Atomic saves.** Data is written to a temporary file which then replaces the real file with `std::rename`, so an interrupted save never leaves a half-written file.
+- **Forgiving loading.** A corrupted line in a data file is skipped and reported, rather than crashing the program or discarding all the data.
 
 ## Build and run
 
-**With Xcode:** open `HouseholdFinanceServer.xcodeproj` and press Run.
+Requirements: a C++17 compiler and CMake 3.16+.
 
-**From the terminal (macOS/Linux):**
+```bash
+cmake -S . -B build
+cmake --build build
+./build/finance_tracker
+```
 
-    clang++ -std=c++17 HouseholdFinanceServer/*.cpp -o finance_tracker
-    ./finance_tracker
+On the first run, sample data for two months is created. Data is stored in `transactions.csv` and `budgets.csv` in the working directory (both are git-ignored).
 
-On first run, a few sample transactions are created. Data is saved to `finance_data.txt` in the working directory (this file is git-ignored).
+An Xcode project is also included: open `HouseholdFinanceServer.xcodeproj` and press Run.
+
+## Tests
+
+The logic is covered by unit tests written with [GoogleTest](https://github.com/google/googletest) (downloaded automatically by CMake):
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+The tests cover money parsing and formatting, date validation (including leap years), monthly summaries, budget overruns, the savings forecast, editing and deleting, and saving and loading files, including corrupted input. GitHub Actions runs the build and all tests on Linux and macOS on every push.
 
 ## Roadmap
 
-- [x] Split the code into separate files (`Transaction.h`, `HouseholdFinance.h/.cpp`, `main.cpp`)
-- [x] Robust input handling (invalid numbers, malformed lines in the data file)
-- [ ] Filter by month so the savings calculation uses monthly figures
-- [ ] Unit tests
-- [ ] Configurable budgets (load from a file instead of hardcoded values)
-- [ ] Edit and delete transactions
+- [x] Split the code into separate files and layers
+- [x] Robust input handling
+- [x] Monthly reports and per-month budgets
+- [x] Edit and delete transactions
+- [x] Configurable budgets saved to a file
+- [x] Unit tests and CI
+- [ ] Recurring transactions (e.g. rent every month)
+- [ ] Export a monthly report to a file
+- [ ] REST API (e.g. with the Drogon framework) and a web interface
 
 ## Author
 

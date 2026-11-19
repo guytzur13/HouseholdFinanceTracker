@@ -3,25 +3,29 @@
 
 #include <string>
 
-// פונקציות עזר לקריאת קלט בטוחה מהמשתמש.
-// כל פונקציה ממשיכה לבקש קלט עד שמתקבל ערך תקין.
-// אם הקלט נגמר (EOF, למשל Ctrl+D), נזרקת חריגה מסוג InputClosed.
+#include "Money.h"
 
+// Helpers for reading user input safely from the console.
+// Each function keeps asking until it gets a valid value, so invalid input
+// (letters instead of numbers, impossible dates...) never breaks the program.
+
+// Thrown when input ends (EOF, e.g. Ctrl+D), so the app can exit cleanly
+// instead of looping forever on a closed input stream.
 struct InputClosed {};
 
-// קריאת שורה שלמה (לא ריקה) מהמשתמש
+// Reads a non-empty line of text.
 std::string readLine(const std::string& prompt);
 
-// קריאת מספר שלם בטווח [min, max]
+// Reads a whole number in the range [min, max].
 int readInt(const std::string& prompt, int min, int max);
 
-// קריאת מספר חיובי (גדול מ-0)
-double readPositiveDouble(const std::string& prompt);
+// Reads a positive money amount, e.g. "250" or "99.90", and returns it in agorot.
+Cents readMoney(const std::string& prompt);
 
-// קריאת תאריך בפורמט YYYY-MM-DD
+// Reads a valid date in YYYY-MM-DD format.
 std::string readDate(const std::string& prompt);
 
-// בדיקה האם מחרוזת היא תאריך תקין בפורמט YYYY-MM-DD
-bool isValidDate(const std::string& date);
+// Asks a yes/no question. Accepts 1 for yes and 2 for no.
+bool readYesNo(const std::string& prompt);
 
 #endif // INPUT_UTILS_H
