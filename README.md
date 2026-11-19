@@ -16,8 +16,16 @@ A C++ command-line application for tracking household income and expenses, with 
 ## Tech
 
 - C++ (STL: `vector`, `map`, `fstream`, `sstream`)
-- Object-oriented design (`Transaction` struct, `HouseholdFinance` class)
+- Object-oriented design (`Transaction` struct, `HouseholdFinance` class), split into header and source files
 - Xcode project included; also builds from the command line
+
+## Project structure
+
+    HouseholdFinanceServer/
+    ├── Transaction.h          # Transaction struct
+    ├── HouseholdFinance.h     # HouseholdFinance class declaration
+    ├── HouseholdFinance.cpp   # HouseholdFinance implementation
+    └── main.cpp               # entry point
 
 ## Build and run
 
@@ -25,14 +33,14 @@ A C++ command-line application for tracking household income and expenses, with 
 
 **From the terminal (macOS/Linux):**
 
-    clang++ -std=c++17 HouseholdFinanceServer/main.cpp -o finance_tracker
+    clang++ -std=c++17 HouseholdFinanceServer/*.cpp -o finance_tracker
     ./finance_tracker
 
 On first run, a few sample transactions are created. Data is saved to `finance_data.txt` in the working directory (this file is git-ignored).
 
 ## Roadmap
 
-- [ ] Split the code into separate files (`Transaction.h`, `HouseholdFinance.h/.cpp`, `main.cpp`)
+- [x] Split the code into separate files (`Transaction.h`, `HouseholdFinance.h/.cpp`, `main.cpp`)
 - [ ] Robust input handling (invalid numbers, malformed lines in the data file)
 - [ ] Filter by month so the savings calculation uses monthly figures
 - [ ] Unit tests
